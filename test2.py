@@ -1,34 +1,45 @@
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.crawler import CrawlerProcess
+from scrapy.spiders import Rule
+import scrapy
+from urllib2 import urlopen
+
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.selector import HtmlXPathSelector
 from craigslist_sample.items import CraigslistSampleItem
-from scrapy.crawler import CrawlerProcess
-from scrapy.http import Request
-from scrapy.conf import settings
-from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
+import nltk
+from bs4 import BeautifulSoup
+from nltk import word_tokenize
+import re
+
+paginas = []
 
 
-import scrapy
 class DmozItem(scrapy.Item):
     title = scrapy.Field()
     link = scrapy.Field()
     desc = scrapy.Field()
 
-class DmozSpider(scrapy.Spider):
-    name = "dmoz"
-    allowed_domains = ["ucr.ac.cr"]
-    start_urls = [
-        "http://mediacionvirtual.ucr.ac.cr/19/"
-    ]
-    rules = (
-        Rule(LxmlLinkExtractor(),
-    )
 
-    def parse(self, response):
-        x = response.xpath('//div')
-        for p in x.xpath('//@href'):
-            print p.extract()
+class MySpider(CrawlSpider):
+    name = "ucr"
+    allowed_domains = ["ucr.ac.cr"]
+    start_urls = ["http://ucr.ac.cr/"]
+
+    rules = (Rule(SgmlLinkExtractor(allow=(), restrict_xpaths=()),
+                  callback="parse_items", follow=True),
+             )
+
+    def parse_items(self, response):
+        print response.url + 'lol'
+        paginas.append(response.url)
+
+
+MySpider.custom_settings = dict(DEPTH_LIMIT=1, RETRY_ENABLED=False)
 
 process = CrawlerProcess()
-process.crawl(DmozSpider)
-process.start() # the script will block here until all crawling jobs are finished
+process.crawl(MySpider)
+process.start()  # the script will block here until all crawling jobs are finished
+print paginas
